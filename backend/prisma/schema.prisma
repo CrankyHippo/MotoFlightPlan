@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  rides         Ride[]
+  contacts      Contact[]
+  sharedRides   SharedRide[]
+}
+
+model Ride {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  startPoint  Json
+  endPoint    Json
+  waypoints   Json[]
+  distance    Float
+  duration    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  sharedRides SharedRide[]
+  tracking    Tracking?
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SharedRide {
+  id        String   @id @default(cuid())
+  rideId    String
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model Tracking {
+  id        String   @id @default(cuid())
+  rideId    String   @unique
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  status    String   // active, completed, cancelled
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  location  Json?    // Current location
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
