@@ -11,23 +11,45 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+
+// CORS configuration
+const allowedOrigins = [
+  'https://moto-flight-plan-frontend.vercel.app',
+  'http://localhost:3000' // For local development
+];
+
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
   },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// Initialize Socket.IO with CORS
+const io = new Server(httpServer, {
+  cors: corsOptions
 });
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Basic health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ 
+    status: 'ok',
+    environment: process.env.NODE_ENV,
+    frontendUrl: process.env.FRONTEND_URL
+  });
 });
 
 // Socket.IO connection handling
@@ -87,4 +109,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
 }); 
